@@ -513,9 +513,219 @@ It is not possible to support part of the YANG tree through App Modules and part
 All new YANG modules should use transformer.
 
 #### 2.4.2 YGOT
+To showcase the YGOT generated Go structure for the given yang model, and how to create the instance of Go structure and filling the values in it.
 
-TODO
+1. openconfig-sample-interfaces.yang:
+ 
+   This is the Sample YANG module (openconfig-sample-interfaces) for which the Go structure will be generated
+   to demonstrate how to use the Go strucuture to fill the values of the types defined in the yang model.
 
+```
+  module openconfig-sample-interfaces {
+    
+    yang-version "1.1";
+    
+    namespace "http://openconfig.net/yang/sample-interfaces";
+    
+    prefix "oc-sample-if";
+    
+    import ietf-interfaces { prefix ietf-if; }
+    
+    organization "Sonic sample interfaces yang";
+    
+    contact
+    "SONiC";
+    
+    description
+    "Openconfig sample interfaces yang";
+    
+    grouping sample-interface-config {
+        description "sample interface config grouping";
+        leaf name {
+          type string;
+          description
+            "The name of the interface.";
+        }
+        leaf type {
+          type identityref {
+            base ietf-if:interface-type;
+          }
+          description
+            "The type of the interface.";
+        }
+        leaf mtu {
+          type uint16;
+          description
+            "sample mtu";
+        }
+    }
+
+    grouping sample-interfaces-top {
+        description
+          "Top-level sample interface grouping";
+
+            container sample-interfaces {
+                description
+                "Top level container for sample interfaces.";
+
+                list sample-interface {
+                    key "name";
+                    description
+                    "list of sample yang interfaces.";
+
+                    leaf name {
+                        type leafref {
+                            path "../config/name";
+                        }
+                        description
+                            "sample interface name.";
+                    }
+
+                    container config {
+                        description
+                            "Configurable items";
+                        uses sample-interface-config;
+                    }
+
+                    container state {
+                        config false;
+                        description
+                            "Sample interface state";
+                        uses sample-interface-config;
+                    }
+              }
+        }
+    }
+    uses sample-interfaces-top;
+}
+```
+
+2. Generated Go structure for the YANG model "openconfig-sample-interfaces.yang":
+
+   This is the generated Go structure for the given Sample YANG model and its structure's hierarchy is similar to the given YANG model "openconfig-sample-interfaces.yang".
+
+	Note: OpenconfigSampleInterfaces_SampleInterfaces represents the /openconfig-sample-interfaces/sample-interfaces YANG schema element.
+	```
+	type OpenconfigSampleInterfaces_SampleInterfaces struct {
+		SampleInterface	map[string]*OpenconfigSampleInterfaces_SampleInterfaces_SampleInterface	`path:"sample-interface" module:"openconfig-sample-interfaces"`
+	}
+	```
+
+
+	Note: NewSampleInterface creates a new entry in the SampleInterface list of the OpenconfigSampleInterfaces_SampleInterfaces struct. 
+	The keys of the list are populated from the input arguments.
+	```
+	func (t *OpenconfigSampleInterfaces_SampleInterfaces) NewSampleInterface(Name string) (*OpenconfigSampleInterfaces_SampleInterfaces_SampleInterface, error){
+
+		// Initialise the list within the receiver struct if it has not already been
+		// created.
+		if t.SampleInterface == nil {
+			t.SampleInterface = make(map[string]*OpenconfigSampleInterfaces_SampleInterfaces_SampleInterface)
+		}
+
+		key := Name
+
+		// Ensure that this key has not already been used in the
+		// list. Keyed YANG lists do not allow duplicate keys to
+		// be created.
+		if _, ok := t.SampleInterface[key]; ok {
+			return nil, fmt.Errorf("duplicate key %v for list SampleInterface", key)
+		}
+
+		t.SampleInterface[key] = &OpenconfigSampleInterfaces_SampleInterfaces_SampleInterface{
+			Name: &Name,
+		}
+
+		return t.SampleInterface[key], nil
+	}
+	```
+
+
+	Note: OpenconfigSampleInterfaces_SampleInterfaces_SampleInterface represents the /openconfig-sample-interfaces/sample-interfaces/sample-interface YANG schema element.
+	```
+	type OpenconfigSampleInterfaces_SampleInterfaces_SampleInterface struct {
+		Config	*OpenconfigSampleInterfaces_SampleInterfaces_SampleInterface_Config	`path:"config" module:"openconfig-sample-interfaces"`
+		Name	*string	`path:"name" module:"openconfig-sample-interfaces"`
+		State	*OpenconfigSampleInterfaces_SampleInterfaces_SampleInterface_State	`path:"state" module:"openconfig-sample-interfaces"`
+	}
+	```
+
+
+	Note: OpenconfigSampleInterfaces_SampleInterfaces_SampleInterface_Config represents the /openconfig-sample-interfaces/sample-interfaces/sample-interface/config YANG schema element.
+	```
+	type OpenconfigSampleInterfaces_SampleInterfaces_SampleInterface_Config struct {
+		Mtu	*uint16	`path:"mtu" module:"openconfig-sample-interfaces"`
+		Name	*string	`path:"name" module:"openconfig-sample-interfaces"`
+		Type	E_IETFInterfaces_InterfaceType	`path:"type" module:"openconfig-sample-interfaces"`
+	}
+	```
+
+
+	Note: OpenconfigSampleInterfaces_SampleInterfaces_SampleInterface_State represents the /openconfig-sample-interfaces/sample-interfaces/sample-interface/state YANG schema element.
+	```
+	type OpenconfigSampleInterfaces_SampleInterfaces_SampleInterface_State struct {
+		Mtu	*uint16	`path:"mtu" module:"openconfig-sample-interfaces"`
+		Name	*string	`path:"name" module:"openconfig-sample-interfaces"`
+		Type	E_IETFInterfaces_InterfaceType	`path:"type" module:"openconfig-sample-interfaces"`
+	}
+	```
+
+
+3. The mapping between the yang model hierarchy and Go structure hierarchy is depicted below:
+
+	| **"openconfig-sample-interfaces.yang" model**        |                            **Go Structure**                         |
+	|------------------------------------------------------|---------------------------------------------------------------------|
+	| container sample-interfaces                          | OpenconfigSampleInterfaces_SampleInterfaces                         |
+	| list sample-interface                                | OpenconfigSampleInterfaces_SampleInterfaces_SampleInterface         |
+	|  --- leaf name                                       | Name                                                                |
+	|  --- container onfig                                 | OpenconfigSampleInterfaces_SampleInterfaces_SampleInterface_Config  |
+	|  ------ leaf name                                    | Name                                                                |
+	|  ------ leaf type                                    | Type                                                                |
+	|  ------ leaf mtu                                     | Mtu                                                                 |
+	|  --- container state                                 | OpenconfigSampleInterfaces_SampleInterfaces_SampleInterface_State   |    
+	|  ------ leaf name                                    | Name                                                                |
+	|  ------ leaf type                                    | Type                                                                |
+	|  ------ leaf mtu                                     | Mtu                                                                 |
+	
+
+4. Fill the Go structure with the data values for the sample yang:
+	a. Initialize the top level container node's (sample-interfaces) Go struct (OpenconfigSampleInterfaces_SampleInterfaces)
+	```
+			sampleInterfaces := OpenconfigSampleInterfaces_SampleInterfaces{}
+	```
+	
+	b. If needed, using the top level Go struct, initialization of any non-list child node can be done using the Ygot function ygot.BuildEmptyTree(type). 
+	This function will create and initialize the child level non-list node's Go struct with default value of the type
+	```	
+			ygot.BuildEmptyTree(sampleInterfaces)
+	```
+	
+	c. To fill the list node (sample-interface) which present inside the container node (sample-interfaces), Go function "NewSampleInterface" can be used to create an instance of the list node which will return the instance of the instance list node's Go struct "OpenconfigSampleInterfaces_SampleInterfaces_SampleInterface".		
+	```
+			sampleIntf := sampleInterfaces.NewSampleInterface("TestInterface-1")
+	```
+	
+	d. To fill the container node ("config") inside the list node (sample-interface), the corresponding Go struct should be instantiated with filing the values of the fields and assigned to its field of the struct  "OpenconfigSampleInterfaces_SampleInterfaces_SampleInterface_Config"	        
+	```
+		sampleIntf.Config := OpenconfigSampleInterfaces_SampleInterfaces_SampleInterface_Config{}
+	        	     intfKey := "TestInterface-1"	
+	                     sampleIntf.Config.Name = &intfKey
+	                     sampleIntf.Config.Type = IETFInterfaces_InterfaceType_IF_NVE
+	                     intfMtu = 200
+	                     sampleIntf.Config.Mtu = &intfMtu
+	```
+	e. Container node "state" will be same as the way "config" node is being filled as mentioned in the previous step, that is to fill the 
+	container node ("state")  inside the list node (sample-interface), the corresponding Go struct should be instantiated with filing the values
+	of the fields and assigned to its field of the struct  "OpenconfigSampleInterfaces_SampleInterfaces_SampleInterface_State"	        
+	```
+			sampleIntf.State := OpenconfigSampleInterfaces_SampleInterfaces_SampleInterface_State{}
+	        	     intfKey := "TestInterface-1"	
+	                     sampleIntf.State.Name = &intfKey
+	                     sampleIntf.State.Type = IETFInterfaces_InterfaceType_IF_NVE
+	                     intfMtu = 200
+	                     sampleIntf.State.Mtu = &intfMtu
+	```
+	
 #### 2.4.3 DB Access APIs
 
 The DB access layer implements a wrapper over the go-redis package enhancing the functionality as described in:
