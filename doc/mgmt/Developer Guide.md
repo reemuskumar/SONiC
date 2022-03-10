@@ -94,8 +94,9 @@
 | 0.9  | 06/22/2020 |       Sachin Hola       | Incorporated Phase-II changes, with new repo structure.      |
 | 1.0  | 10/09/2020 | Anand Kumar Subramanian | Debugging performance issues                                 |
 | 1.1  | 08/10/2021 |      Kwangsuk Kim       | Updated Transformer section including query parameter etc.   |
-| 1.2  | 12/10/2021 |      Arun Barboza       | Added Pruning API description.                              |
+| 1.2  | 12/10/2021 |      Arun Barboza       | Added Pruning API description.                               |
 | 1.3  | 12/28/2021 |      Arun Barboza       | Added Redaction API description.                             |
+| 1.4  | 12/28/2021 |      Balachandar Mani   | Added details for YGOT section                               |
 
 ## About this Manual
 
