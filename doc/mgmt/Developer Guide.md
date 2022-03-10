@@ -722,7 +722,7 @@ To showcase the YGOT generated Go structure for the given yang model, and how to
 	        	     intfKey := "TestInterface-1"	
 	                     sampleIntf.State.Name = &intfKey
 	                     sampleIntf.State.Type = IETFInterfaces_InterfaceType_IF_NVE
-	                     intfMtu = 200
+	                     intfMtu := 200
 	                     sampleIntf.State.Mtu = &intfMtu
 	```
 	
