@@ -675,17 +675,17 @@ To showcase the YGOT generated Go structure for the given yang model, and how to
 
 	| **"openconfig-sample-interfaces.yang" model**        |                            **Go Structure**                         |
 	|------------------------------------------------------|---------------------------------------------------------------------|
-	| container sample-interfaces                          | OpenconfigSampleInterfaces_SampleInterfaces                         |
-	| list sample-interface                                | OpenconfigSampleInterfaces_SampleInterfaces_SampleInterface         |
-	|  --- leaf name                                       | Name                                                                |
-	|  --- container onfig                                 | OpenconfigSampleInterfaces_SampleInterfaces_SampleInterface_Config  |
-	|  ------ leaf name                                    | Name                                                                |
-	|  ------ leaf type                                    | Type                                                                |
-	|  ------ leaf mtu                                     | Mtu                                                                 |
-	|  --- container state                                 | OpenconfigSampleInterfaces_SampleInterfaces_SampleInterface_State   |    
-	|  ------ leaf name                                    | Name                                                                |
-	|  ------ leaf type                                    | Type                                                                |
-	|  ------ leaf mtu                                     | Mtu                                                                 |
+	| container: sample-interfaces                         | OpenconfigSampleInterfaces_SampleInterfaces                         |
+	| list: sample-interface                               | OpenconfigSampleInterfaces_SampleInterfaces_SampleInterface         |
+	|  --- leaf: name                                      | Name                                                                |
+	|  --- container: onfig                                | OpenconfigSampleInterfaces_SampleInterfaces_SampleInterface_Config  |
+	|  ------ leaf: name                                   | Name                                                                |
+	|  ------ leaf: type                                   | Type                                                                |
+	|  ------ leaf: mtu                                    | Mtu                                                                 |
+	|  --- container: state                                | OpenconfigSampleInterfaces_SampleInterfaces_SampleInterface_State   |    
+	|  ------ leaf: name                                   | Name                                                                |
+	|  ------ leaf: type                                   | Type                                                                |
+	|  ------ leaf: mtu                                    | Mtu                                                                 |
 	
 
 4. Fill the Go structure with the data values for the sample yang:
