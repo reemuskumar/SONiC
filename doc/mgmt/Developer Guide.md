@@ -711,7 +711,7 @@ To showcase the YGOT generated Go structure for the given yang model, and how to
 	        	     intfKey := "TestInterface-1"	
 	                     sampleIntf.Config.Name = &intfKey
 	                     sampleIntf.Config.Type = IETFInterfaces_InterfaceType_IF_NVE
-	                     intfMtu = 200
+	                     intfMtu := 200
 	                     sampleIntf.Config.Mtu = &intfMtu
 	```
 	e. Container node "state" will be same as the way "config" node is being filled as mentioned in the previous step, that is to fill the 
