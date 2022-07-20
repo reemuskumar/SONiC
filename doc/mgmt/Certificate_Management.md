@@ -253,16 +253,11 @@ A new CLI will be added with the following commands:
 | crypt ca-cert verify | Verify CA cert |
 | show crypto cert | Show installed certificates list or specific cert details |
 | show crypto ca-cert | Show installed CA certificates list or specific cert details |
-| show file cert | Show raw certificate file in PEM format |
+| show crypto cert file | Show raw host certificate file in PEM format |
+| show crypto ca-cert file | Show raw CA certificate file in PEM format |
 | crypto security-profile | Create security-profile |
 | crypto security-profile certificate | Associate security-profile with certificate |
 | crypto security-profile trust-store | Associate security-profile with trust-store |
-| crypto ca-server mode | Enable CA server/client or disabled |
-| crypto ca-server host | The CA server hostname/ip if in client mode |
-| crypto ca-server list-csr | Show list of CSRs sent to us to be signed |
-| crypto ca-server show-csr | Show details of CSR |
-| crypto ca-server sign-csr | Sign CSR sent to us |
-| crypto ca-server delete-csr | Reject and delete CSR sent to us |
 | crypto trust-store <name> | Create new or access existing trust-store |
 | crypto trust-store <name> add <ca-name> | Add CA cert to trust-store |
 
@@ -443,7 +438,7 @@ The config DB will contain the new model's information.
 
 #### Configure CRL frequency
 
-    crypto x509 crl frequency <days>
+    crypto revocation crl frequency <days>
 
 *Parameters*
 |**Name**|**Description**|
@@ -454,7 +449,7 @@ The config DB will contain the new model's information.
 
 #### Configure CRL download location
 
-    [no] revocation crl identifier
+    [no] crypto revocation crl identifier
 
 *Parameters*
 |**Name**|**Description**|
@@ -463,7 +458,7 @@ The config DB will contain the new model's information.
 
 #### Configure OCSP responder location
 
-    [no] ocsp responder identifier
+    [no] crypto ocsp responder identifier
 
 *Parameters*
 |**Name**|**Description**|
@@ -542,7 +537,7 @@ The config DB will contain the new model's information.
 
 #### Raw PEM Format Certificate
 
-    show file cert <name>
+    show crypto cert file <name>
 
 *Parameters*
 |**Name**|**Description**|
@@ -551,11 +546,11 @@ The config DB will contain the new model's information.
 
 ### Show CRL distribution points
 
-    show revocation crl
+    show crypto revocation crl
 
 ### Show OCSP responder
 
-    show ocsp
+    show crypto ocsp
 
 #### 3.3.2.3 Exec Commands
 
@@ -685,7 +680,7 @@ Verify certificate using openssl verify command.
 
 *Force CDP refresh*
 
-    crypto cert refresh crl
+    crypto cert refresh-crl
 
 ### 3.3.3 REST API Support
 
