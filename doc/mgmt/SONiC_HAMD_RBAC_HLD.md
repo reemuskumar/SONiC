@@ -160,7 +160,9 @@ The existing RBAC feature must be enhanced to support the new roles.
 
 ## 1.1 Target Deployment Use Cases
 - HAMD and RBAC enhancements is done in order to create user accounts and provide them with the desired level of roles/access to the target system.
--	For FedGov certification, SecAdmin user role must be supported.
+- For FedGov certification, SecAdmin user role must be supported.
+- Peeling out HAM from mgmt-framework repo will result in considerable time reduction when compiling the telemetry repo.
+  This is because peeling out HAM results in breaking the dependancy between HAM and mgmt-framework modules, eventually resulting in independant mgmt-framework and telemetry docker compilations.
 
 ## 1.2 Requirements
 ### 1.2.1 HAMD and Remote user Requirements
@@ -1012,6 +1014,12 @@ NA
 
 # 10 Limitations
 
+1. The RBAC feature will not be supported in CLICK mode and FRR vtysh.
+       - Non-admin users like netadmin/secadmin/operator will not be allowed to access CLICK mode and FRR vtysh.
+
+2. Non-admin users have a slight delay in sonic-cli launch time compared to admin users.
+       - Admin users have complete access to all commands and hence don't have to go-through the checks, which results in zero delay.
+
 ### Table 6: Sonic-cli launch time optimization
 | **S.no** | **User role**     | **sonic-cli Launch time (in seconds)**   |
 |--------- |------------------ |----------------------------------------- |
@@ -1020,7 +1028,7 @@ NA
 | 3	| secadmin	| 1.5 |
 | 4	| netadmin	| 1.5 |
 
-Note : sonic-cli launch time is directly proportional to the num of Xpaths the user has access to.
+Note : sonic-cli launch time is directly proportional to the num of Xpaths the user has access to [Exception is admin user].
 
 
 # 11 Unit Test
