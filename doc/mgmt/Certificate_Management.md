@@ -208,6 +208,7 @@ This model will also be proposed to the openconfig community. The model is discu
 
 ### 1.3.3 KLISH CLI
 
+A new CLI for REST and Telemetry will be added.
 A new CLI will be added with the following commands:
 
 **CLI Commands**
@@ -489,6 +490,34 @@ The config DB will contain the new model's information.
 | sp name | security profile name |
 | cdp list | Comma separated list of urls |
 
+#### Configure REST parameters
+    [no] ip rest <attr>
+
+*Parameters*
+|**Name**|**Description**|
+| ------ | ------------- |
+| authentication |  |
+| jwt-refresh | Time before JWT expiry the token can be refreshed |
+| jwt-valid | Seconds that JWT token is valid |
+| log-level | Log level |
+| port | Port that the REST server listens on |
+| read-timeout | Number of seconds the server waits for a valid http request to arrive on a connection |
+| request-limit | Maximum number of concurrent requests allowed for REST server |
+| security-profile | Security profile |
+
+#### Configure REST parameters
+    [no] ip telemetry <attr>
+
+*Parameters*
+|**Name**|**Description**|
+| ------ | ------------- |
+| authentication | Telemetry authentication modes |
+| jwt-refresh | Time before JWT expiry the token can be refreshed |
+| jwt-valid | Seconds that JWT token is valid |
+| log-level | Log level |
+| port | Port that the telemetry server listens on |
+| security-profile | Security profile |
+
 #### 3.3.2.2 Show Commands
 
 #### Show host certificate(s)
@@ -535,6 +564,31 @@ The config DB will contain the new model's information.
 |**Name**|**Description**|
 | ------ | ------------- |
 | name | name of security-profile |
+
+#### REST
+    show ip rest
+
+        authentication    Display REST authentication modes
+        jwt-refresh       Display JWT refresh time
+        jwt-valid         Display JWT valid time
+        log-level         Display log level
+        port              Display port that Rest server is listening on
+        read-timeout      Display read timeout
+        request-limit     Display concurrent request limit
+        security-profile  Display security profile
+
+
+
+#### Telemetry
+    show ip telemetry
+
+        authentication    Display REST authentication modes
+        jwt-refresh       Display JWT refresh time
+        jwt-valid         Display JWT valid time
+        log-level         Display log level of REST server
+        port              Display port that telemetry server is listening on
+        security-profile  Display security profile
+
 
 #### 3.3.2.3 Exec Commands
 
