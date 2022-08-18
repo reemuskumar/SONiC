@@ -490,13 +490,16 @@ The config DB will contain the new model's information.
 | sp name | security profile name |
 | cdp list | Comma separated list of urls |
 
+#### Configure FIPS mode
+    crypto fips <true/false>
+
 #### Configure REST parameters
     [no] ip rest <attr>
 
 *Parameters*
 |**Name**|**Description**|
 | ------ | ------------- |
-| authentication |  |
+| authentication | REST authentication modes |
 | jwt-refresh | Time before JWT expiry the token can be refreshed |
 | jwt-valid | Seconds that JWT token is valid |
 | log-level | Log level |
@@ -564,30 +567,45 @@ The config DB will contain the new model's information.
 |**Name**|**Description**|
 | ------ | ------------- |
 | name | name of security-profile |
+    
+#### Trust Stores
+
+    show crypto trust-store
+
+*Parameters*
+|**Name**|**Description**|
+| ------ | ------------- |
+| name | name of trust-store |
 
 #### REST
     show ip rest
-
-        authentication    Display REST authentication modes
-        jwt-refresh       Display JWT refresh time
-        jwt-valid         Display JWT valid time
-        log-level         Display log level
-        port              Display port that Rest server is listening on
-        read-timeout      Display read timeout
-        request-limit     Display concurrent request limit
-        security-profile  Display security profile
+    
+*Parameters*
+|**Name**|**Description**|
+| ------ | ------------- |
+| authentication | Display REST authentication modes |
+| jwt-refresh | Display JWT refresh time |
+| jwt-valid | Display JWT valid time |
+| log-level | Display log level |
+| port | Display port that REST server is listening on |
+| read-timeout | Display read timeout |
+| request-limit | Display concurrent request limit |
+| security-profile | Display security profile |
 
 
 
 #### Telemetry
     show ip telemetry
 
-        authentication    Display REST authentication modes
-        jwt-refresh       Display JWT refresh time
-        jwt-valid         Display JWT valid time
-        log-level         Display log level of REST server
-        port              Display port that telemetry server is listening on
-        security-profile  Display security profile
+*Parameters*
+|**Name**|**Description**|
+| ------ | ------------- |
+| authentication | Display telemetry authentication modes |
+| jwt-refresh | Display JWT refresh time |
+| jwt-valid | Display JWT valid time |
+| log-level | Display log level |
+| port | Display port that telemetry server is listening on |
+| security-profile | Display security profile |
 
 
 #### 3.3.2.3 Exec Commands
