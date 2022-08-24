@@ -46,6 +46,7 @@ HAMD and RBAC Enhancements
 		- [3.6.4 ASIC DB](#364-asic-db)
 		- [3.6.5 COUNTER DB](#365-counter-db)
 		- [3.6.6 ERROR DB](#366-error-db)
+		- [3.6.7 USER DB](#367-user-db)
 	- [3.7 Switch State Service Design](#37-switch-state-service-design)
 		- [3.7.1 Orchestration Agent](#371-orchestration-agent)
 		- [3.7.2 Other Processes](#372-other-processes)
@@ -63,25 +64,32 @@ HAMD and RBAC Enhancements
 	- [3.12 Upgrade and Downgrade Considerations](#312-upgrade-and-downgrade-considerations)
 	- [3.13 Resource Needs](#313-resource-needs)
 - [4 Flow Diagrams](#4-flow-diagrams)
-- [5 Error Handling](#5-error-handling)
-- [6 Serviceability and Debug](#6-serviceability-and-debug)
-- [7 Scalability](#7-scalability)
-- [8 Platform](#8-platform)
-- [9 Security and Threat Model](#9-security-and-threat-model)
-- [10 Limitations](#10-limitations)
-- [11 Unit Test](#11-unit-test)
-- [12 Internal Design Information](#12-internal-design-information)
-	- [12.1 RBAC Code changes](#121-rbac-code-changes)
-		- [12.1.1 Klish code changes](#1211-klish-code-changes)
-		- [12.1.2 REST/gNMI code changes](#1212-restgnmi-code-changes)
-	- [12.2 HAMD code changes](#122-hamd-code-changes)
-	- [12.3 Radius code changes](#123-radius-code-changes)
-	- [12.4 Tacacs code changes](#124-tacacs-code-changes)
-	- [12.5 IS-CLI Compliance](#125-is-cli-compliance)
-	- [12.6 SONiC Packaging](#126-sonic-packaging)
-	- [12.7 Broadcom Silicon Considerations](#127-broadcom-silicon-considerations)
-	- [12.8 Design Alternatives](#128-design-alternatives)
-	- [12.9 Release Matrix](#129-release-matrix)
+- [5 Implementation guide lines](#5-implementation-guide-lines)
+	- [5.1 CLI New feature Implementation](#51-cli-new-feature-implementation)
+	- [5.2 RBAC New feature Implementation](#52-rbac-new-feature-implementation)
+- [6 Error Handling](#6-error-handling)
+	- [6.1 REST Error Handling](#61-rest-error-handling)
+	- [6.2 gNMI Error Handling](#62-gnmi-error-handling)
+	- [6.3 CLI Error Handling](#63-cli-error-handling)
+- [7 Serviceability and Debug](#7-serviceability-and-debug)
+	- [7.1 Execution of unauthorized commands](#71-execution-of-unauthorized-commands)
+- [8 Scalability](#8-scalability)
+- [9 Platform](#-platform)
+- [10 Security and Threat Model](#10-security-and-threat-model)
+- [11 Limitations](#11-limitations)
+- [12 Unit Test](#12-unit-test)
+- [13 Internal Design Information](#13-internal-design-information)
+	- [13.1 RBAC Code changes](#131-rbac-code-changes)
+		- [13.1.1 Klish code changes](#1311-klish-code-changes)
+		- [13.1.2 REST/gNMI code changes](#1312-restgnmi-code-changes)
+	- [13.2 HAMD code changes](#132-hamd-code-changes)
+	- [13.3 Radius code changes](#133-radius-code-changes)
+	- [13.4 Tacacs code changes](#134-tacacs-code-changes)
+	- [13.5 IS-CLI Compliance](#135-is-cli-compliance)
+	- [13.6 SONiC Packaging](#136-sonic-packaging)
+	- [13.7 Broadcom Silicon Considerations](#137-broadcom-silicon-considerations)
+	- [13.8 Design Alternatives](#138-design-alternatives)
+	- [13.9 Release Matrix](#139-release-matrix)
 
 <!-- /TOC -->
 
@@ -147,7 +155,7 @@ This document provides comprehensive functional and design information about the
 The HAM module, which is an integral component of sonic-mgmt-framework repository, provides user account management related services. The services can be used by any other module/application of SONiC. Hence, it will be separated out from the sonic-mgmt-frame repository (src/sonic-mgmt-framework/ham) and moved under the src folder - (../src/sonic-ham).
 
 In addition to that, the following enhancements would be done.
-. HAMd must update the user account information in the STATE DB. 
+. HAMd must update the user account information in the USER_DB. 
 . There must be a provision to associate more than one role to a user.
 
 ## RBAC enhancements overview
@@ -168,11 +176,11 @@ The existing RBAC feature must be enhanced to support the new roles.
 ### 1.2.1 HAMD and Remote user Requirements
 1.	HAM module must be separated from the sonic-mgmt-framework repository and must be moved to the "src" directory (/dell_sonic_share/sonic-buildimage/src/).
 2.	HAMd must subscribe to the user account-related configuration notifications from the CONFIG-DB. 
-    The user account information from the CONFIG-DB must be stored in the state DB(User Account information table).
-    -	RBAC feature uses the User Account information table (State DB) to fetch the user account information.
+    The user account information from the CONFIG-DB must be stored in the USER_DB(User Account information table).
+    -	RBAC feature uses the User Account information table (USER_DB) to fetch the user account information.
     - HAMd handles only the local user accounts.
-3.	TACACS module must store the remote user account information in the state DB (User Account information table). 
-4.	RADIUS module must store the remote user account information in the state DB (User Account information table).
+3.	TACACS module must store the remote user account information in the USER_DB (User Account information table). 
+4.	RADIUS module must store the remote user account information in the USER_DB (User Account information table).
 5.	The following new user roles must be supported.
     -	secadmin  
     -	netadmin
@@ -195,6 +203,9 @@ The existing RBAC feature must be enhanced to support the new roles.
 2.	RBAC feature must be supported for both local and remote users.
 3.	RBAC feature must be supported for all NBIs (North bound interfaces) – CLI, Rest, gNMI and etc.,
 4.	Software upgrade must work seamlessly.
+
+Note : Dynamic RBAC and custom user roles are slated for future release.
+
 
 ## 1.3 Design Overview
 ### 1.3.1 Basic Approach
@@ -229,6 +240,8 @@ Two new roles, secAdmin and netAdmin,  must be supported. The following table ca
 
  - No new containers are introduced for this feature. 
  - Both sonic-mgmt-framework container (Rest) and sonic-telemetry container (gNMI) use translib library. So the required RBAC functionality would be implemented in the translib module (sonic-mgmt-common).
+	- When a REST query is received in mgmt-framework container, the URI is used to fetch the details from the RBAC Trie Tree and proceed further.
+	- When a gNMI GET/SET query is received in telemetry container, the URI is used to fetch the details from the RBAC Trie Tree and proceed further.
 
 
 ### 1.3.3 SAI Overview
@@ -803,7 +816,7 @@ The whole design is captured in the following diagram,
 - For authorized commands, translib would continue updating the CONFIG DB.
 - For unauthorized commands, an appropriate error message would be returned.
 - The rules to validate the REST/gNMI query is stored in a Trie datastructure in cache. 
-- The trie datastructure is created with the content from sonic-extension:oper-roles in annotation yang files.
+- The trie datastructure is created with the content from sonic-extension:user-role-priv in annotation yang files.
 
 
 ### 3.3.1 RBAC RestAPI/gNMI Datastucture
@@ -818,15 +831,15 @@ The whole design is captured in the following diagram,
 - For example: Xpath is "/open-config/bgp/neighbor".
   Then the "/open-config" is stored in the first node, "/bgp" is stored in the second node and then "/neighbor" is stored the third node along with the Role, operation and access information. Please Refer TrieNode table in the above diagram.
 - The TrieValue table from the above diagram has the Role, Operator and access information.
-  Example: Admin,secadmin and netadmin are Roles.
-           Read, Write and RPC are Operations types. 
-           Permit, Deny, PermitAll and Denyall are access types. 
+	- Roles supported : admin, operator, secadmin and netadmin.
+	- Operations supported : Read, Write and RPC.
+	- Access types supported : Permit, Deny, PermitAll and Denyall.
 
 #### 3.3.1.1 RBAC REST/GNMI Validation
 
 - When a REST/GNMI query is executed, the rest query will be received in the REST/GNMI server.
 - Once the query is received, the credentials are validated. 
-- After validating the credentials, the roles for the username is fetched from the USER_ACC_STATE_TABLE in Redis STATE_DB. 
+- After validating the credentials, the roles for the username is fetched from the USER_TABLE in Redis USER_DB. 
 - Then the Userole, OperationType and REST/GNMI query XPATH is given to the Validation function to do a trie search. 
 - Using the Trie search with the xpath as input, the exact trieNode is found. 
 - Then the userrole and operation is searched in the trieNode to get the access type.
@@ -844,21 +857,31 @@ NA
 
 ## 3.6 DB Changes
 
-
 ### 3.6.1 CONFIG DB
+NA
+
 ### 3.6.2 APP DB
+NA
+
 ### 3.6.3 STATE DB
-A new table would be added in the STATE DB to store the user account information.
-USER_ACC_STATE_TABLE
+NA
+
+### 3.6.4 ASIC DB
+NA
+
+### 3.6.5 COUNTER DB
+NA
+
+### 3.6.6 ERROR DB
+NA
+
+### 3.6.7 USER DB
+A new table would be added in the USER DB to store the user account information : USER_TABLE
 
 user (key) : Username is a string.
 tenant (key) : The tenancy to which the user belongs to. It is a string.
 usertype: This is a enumeration of 'local' and 'remote' corresponding to the type of the user.
 role: The role of the user. This is a comma-separated list of strings. 
-
-### 3.6.4 ASIC DB
-### 3.6.5 COUNTER DB
-### 3.6.6 ERROR DB
 
 ## 3.7 Switch State Service Design
 ### 3.7.1 Orchestration Agent
@@ -876,7 +899,7 @@ N/A
 ## 3.10 User Interface
 
 1.	All XML files under src/sonic-mgmt-framework/CLI/clitree/cli-xml must be updated with the "access" attribute which needs to be added in the command tag .
-2. 	For each xpath that corresponds to a CLI, an annotation yang must be created or updated with the sonic-extension:oper-roles as mentioned in the above section.
+2. 	For each xpath that corresponds to a CLI, an annotation yang must be created or updated with the sonic-extension:user-role-priv as mentioned in the above section.
 
 Note : Both the above changes are applicable to new CLIs to be developed as part of 4.1 release and future releases.
 
@@ -884,10 +907,10 @@ Note : Both the above changes are applicable to new CLIs to be developed as part
 A new container would be added in the the yang file - sonic-system-aaa.yang  
 (src/sonic-mgmt-common/models/yang/sonic/sonic-system-aaa.yang)
 
-        container USER_ACC_STATE_TABLE {
-            sonic-ext:db-name "STATE_DB";
+        container USER_TABLE {
+            sonic-ext:db-name "USER_DB";
             sonic-ext:key-delim "|";
-            list USER_ACC_STATE_TABLE_LIST {
+            list USER_TABLE_LIST {
                 key "user tenant";
 
                 leaf user {
@@ -917,7 +940,7 @@ A new container would be added in the the yang file - sonic-system-aaa.yang
                     description "Flag to identify the user type.";
                 }
             }
-        } // End of container USER_ACC_STATE_TABLE
+        } // End of container USER_TABLE
 
  
 ### 3.10.2 CLI
@@ -951,21 +974,21 @@ NA
 
 | **S.no** | **Case** | **4.0 image**     | **4.1 image**   | **Compatible** |
 |--------- |--------- |------------------ |---------------- | -------------- |
-| 1 | User account with existing user roles	| No entry in state_DB | Entry added in state_DB on receiving notification from config_DB | Yes |
-| 2 | Remote user with admin/operator roles | No entry in state_DB | Entry added in state_DB when remote user logs-in | Yes |
+| 1 | User account with existing user roles	| No entry in USER_DB | Entry added in USER_DB on receiving notification from config_DB | Yes |
+| 2 | Remote user with admin/operator roles | No entry in USER_DB | Entry added in USER_DB when remote user logs-in | Yes |
 | | | Remote user will be created with basic supplementary groups only. But local users have additional groups. | Additional groups (like sonic local user) will be added when remote user logs-in | Yes |
 
 ### Table 5: Downgrade scenario
 
 | **S.no** | **Case** | **4.1 image**     | **4.0 image**   | **Compatible** |
 |--------- |----------|------------------ |---------------- | -------------- |
-| 1 | User account with existing user roles | Entry present in state_DB | Subscription code is not present in HAMD - Hence no entry will be added in the state_DB | Yes |
-| 2 | User account with new roles added in 4.1 | Entry present in state_DB | Subscription code is not present in HAMD - Hence no entry will be added in the state_DB | Yes |
+| 1 | User account with existing user roles | Entry present in USER_DB | Subscription code is not present in HAMD - Hence no entry will be added in the USER_DB | Yes |
+| 2 | User account with new roles added in 4.1 | Entry present in USER_DB | Subscription code is not present in HAMD - Hence no entry will be added in the USER_DB | Yes |
 | | | User account entry in linux kernel | The entry would be persisted by the post script | Yes |
 | | | New groups will be added as a part of the feature | The new groups will be retained and users with the new groups will also be retained. The new roles will not work. The user will behave like an operator. | Yes |
-| 3 | User account with more than one role (support added in 4.1 ) | Entry present in state_DB | Subscription code is not present in HAMD - Hence no entry will be added in the state_DB | Yes |
+| 3 | User account with more than one role (support added in 4.1 ) | Entry present in USER_DB | Subscription code is not present in HAMD - Hence no entry will be added in the USER_DB | Yes |
 | | | User account entry in linux kernel | The entry would be persisted by the post script | Yes |
-| 4 | Remote user accounts | Entry present in state_DB | Radius/Tacacs modules will not write the user details into the state_DB | Yes |
+| 4 | Remote user accounts | Entry present in USER_DB | Radius/Tacacs modules will not write the user details into the USER_DB | Yes |
 | | | New groups will be added as a part of the feature | The new groups will be removed when the remote user logs-in. No functionality issue | Yes |
 | 5 | Pruning the CLI tree | CLI tree will be pruned for both local and remote users | The CLI tree will not be pruned. All the commands will be visible. But when unauthorized commands are executed, the below error will be thrown : "%Error: Client is not authorized to perform this operation"
 
@@ -977,21 +1000,45 @@ NA
 # 4 Flow Diagrams
 Refer to section 3. 
 
-# 5 Error Handling
-7.1. REST Server
+# 5 Implementation guide lines
+
+## 5.1 CLI New feature Implementation
+All the commands in XML files under src/sonic-mgmt-framework/CLI/clitree/cli-xml must be updated with the access tag.
+The access field of each XML COMMAND tag must be updated with the appropriate RBAC information.
+For example,
+               <COMMAND name="configure terminal" access="admin:netadmin"
+                        help="Configure from the terminal"
+                        view="configure-view">
+
+## 5.2 RBAC New feature Implementation
+A new extension statement “user-role-priv” is added to specify the RBAC information.
+For all the annotation yangs, the newly defined extension statement should be added along with the other existing extension statements.
+
+For example,
+	deviation /oc-wmr:warm-restart/oc-wmr:config/oc-wmr:enable {
+	    deviate add {
+		sonic-ext:table-name "WARM_RESTART_ENABLE";
+		sonic-ext:key-transformer "wmr_config_en_key_xfmr";
+		sonic-ext:field-name "enable";
+		sonic-ext:user-role-priv "read: admin, netadmin,  secadmin, !operator;  write: admin, netadmin; rpc: admin";
+            }
+	}
+
+# 6 Error Handling
+## 6.1 REST Error Handling
 The REST server returns standard HTTP errors when authentication fails or if the user tries to access a forbidden resource or perform an unauthorized activity.
 	"Client is not authorized to perform this operation"
 
-7.2. gNMI server
+## 6.2 gNMI Error Handling
 The gNMI server returns standard gRPC errors when authentication fails.
 	"Client is not authorized to perform this operation"
 
-7.3. CLI
+## 6.3 CLI Error Handling
  For CLI, the below error message will be returned when unauthorized commands are issued by the user.
 	"% Error: Invalid input detected at "^" marker."
 
-# 6 Serviceability and Debug
-## 6.1 Execution of unauthorized commands 
+# 7 Serviceability and Debug
+## 7.1 Execution of unauthorized commands
 
 - For REST and gNMI, translib logs an error message in the rest_server log, when unauthorized commands are executed.
 	Aug 01 17:24:37.528338+00:00 2022      21 authorize.go:101] User selva not allowed for write in xpath /openconfig-warm-restart:warm-restart/config/enable
@@ -1000,19 +1047,19 @@ The gNMI server returns standard gRPC errors when authentication fails.
 - For CLI, the below error message will be returned when unauthorized commands are issued by the user.
 	% Error: Invalid input detected at "^" marker.
 
-# 7 Scalability
+# 8 Scalability
 NA
 
-# 8 Platform
+# 9 Platform
 NA (platform agnostic)
 
-# 9 Security and Threat Model
+# 10 Security and Threat Model
 NA
 
-## 9.1 Certificates, secrets, keys, and passwords
+## 10.1 Certificates, secrets, keys, and passwords
 NA
 
-# 10 Limitations
+# 11 Limitations
 
 1. The RBAC feature will not be supported in CLICK mode and FRR vtysh.
        - Non-admin users like netadmin/secadmin/operator will not be allowed to access CLICK mode and FRR vtysh.
@@ -1031,29 +1078,29 @@ NA
 Note : sonic-cli launch time is directly proportional to the num of Xpaths the user has access to [Exception is admin user].
 
 
-# 11 Unit Test
+# 12 Unit Test
 
 ### Table 7: HAMD Test cases
 
 | **S.no** | **Testcase**     | **Test description**   | **Expected behavior**    
 |--------- |------------------|----------------------- |--------------------------
-| 1	| CLI - user add command	| Create a user with username, password and role using CLI command. Verify that the same user is written into kernel (local linux DB), config_DB (only role and username) and state_DB.	| User should be created. The user details should be updated in all the three DBs. 
-| 2	| CLI - user mod command (role change)	| Modify an existing user by allotting a different role using CLI command. Verify that the changes are reflected in the kernel (local linux DB), config_DB (only role and username) and state_DB. |	User role should be modified. The user details should be updated in all the three DBs.	
+| 1	| CLI - user add command	| Create a user with username, password and role using CLI command. Verify that the same user is written into kernel (local linux DB), config_DB (only role and username) and USER_DB.	| User should be created. The user details should be updated in all the three DBs. 
+| 2	| CLI - user mod command (role change)	| Modify an existing user by allotting a different role using CLI command. Verify that the changes are reflected in the kernel (local linux DB), config_DB (only role and username) and USER_DB. |	User role should be modified. The user details should be updated in all the three DBs.	
 | 3	| CLI - user mod command (password change)	| Modify an existing user by changing the password using CLI command. Verify that the changes are reflected in the kernel (local linux DB) . |	User password should be modified. The user details should be updated in linux kernel.
 | 4 |	CLI - login with the user newly created	| Login with the recently created CLI user credentials. Ensure successful login.	| The user should be able to login successfully. Check for the launch prompt also --> linux shell or sonic-cli  based on the type of user role assigned	
-| 5 |	CLI - support for multiple roles	| Create CLI users with multiple comma separated roles. Ensure the same is reflected in the kernel (local linux DB), config_DB (only role and username) and state_DB. | The multiple user roles should be reflected in all the three DBs.	
+| 5 |	CLI - support for multiple roles	| Create CLI users with multiple comma separated roles. Ensure the same is reflected in the kernel (local linux DB), config_DB (only role and username) and USER_DB. | The multiple user roles should be reflected in all the three DBs.	
 | 6 |	CLI - user delete command	| Delete a user using CLI command and verify the same.	| The deleted user should be erased from all the three DBs.	
-| 7	| REST - user add command	| Create a user with username, password and role using REST curl command. Verify that the same user is written into the kernel (local linux DB), config_DB (only role and username) and state_DB.	| User should be created. The user details should be updated in all the three DBs.	
-| 8 |	REST - user mod command (role change)	| Modify an existing user by allotting a different role using REST curl command. Verify that the changes are reflected in the kernel (local linux DB), config_DB (only role and username) and state_DB.	| User role should be modified. The user details should be updated in all the three DBs.
+| 7	| REST - user add command	| Create a user with username, password and role using REST curl command. Verify that the same user is written into the kernel (local linux DB), config_DB (only role and username) and USER_DB.	| User should be created. The user details should be updated in all the three DBs.	
+| 8 |	REST - user mod command (role change)	| Modify an existing user by allotting a different role using REST curl command. Verify that the changes are reflected in the kernel (local linux DB), config_DB (only role and username) and USER_DB.	| User role should be modified. The user details should be updated in all the three DBs.
 | 9 |	REST - user mod command (password change) |	Modify an existing user by changing using REST curl command. Verify that the changes are reflected in the kernel (local linux DB).	| User password should be modified. The user details should be updated in linux kernel.	
 | 10 |	REST - login with the user newly created	| Login with the recently created REST curl user credentials. Ensure successful login.	| The user should be able to login successfully. Check for the launch prompt also --> linux shell or sonic-cli based on the type of user role assigned	
-| 11 |	REST - support for multiple roles	| Create REST users with multiple comma separated roles. Ensure the same is reflected in the kernel (local linux DB), config_DB (only role and username) and state_DB.	| The multiple user roles should be reflected in all the three DBs.	|
+| 11 |	REST - support for multiple roles	| Create REST users with multiple comma separated roles. Ensure the same is reflected in the kernel (local linux DB), config_DB (only role and username) and USER_DB.	| The multiple user roles should be reflected in all the three DBs.	|
 | 12 |	REST - user delete command	| Delete a user using REST and verify the same. 	| The deleted user should be erased from all the three DBs.	
-| 13 |	GNMI - user add command	 | Create a user with username, password and role using GNMI command. Verify that the same user is written into the kernel (local linux DB), config_DB (only role and username) and state_DB	| User should be created. The user details should be updated in all the three DBs.	
-| 14 |	GNMI - user mod command (role change)	| Modify an existing user by allotting a different role using GNMI command. Verify that the changes are reflected in the kernel (local linux DB), config_DB (only role and username) and state_DB.	| User role should be modified. The user details should be updated in all the three DBs.	
+| 13 |	GNMI - user add command	 | Create a user with username, password and role using GNMI command. Verify that the same user is written into the kernel (local linux DB), config_DB (only role and username) and USER_DB	| User should be created. The user details should be updated in all the three DBs.	
+| 14 |	GNMI - user mod command (role change)	| Modify an existing user by allotting a different role using GNMI command. Verify that the changes are reflected in the kernel (local linux DB), config_DB (only role and username) and USER_DB.	| User role should be modified. The user details should be updated in all the three DBs.	
 | 15 |	GNMI - user mod command (password change) |	Modify an existing user by changing using GNMI command. Verify that the changes are reflected in the kernel (local linux DB).	| User password should be modified. The user details should be updated in the linux kernel.	
 |16 |	GNMI - login with the user newly created	| Login with the recently created GNMI user credentials. | Ensure successful login.	The user should be able to login successfully. Check for the launch prompt also --> linux shell or sonic-cli  based on the type of user role assigned	
-| 17 |	GNMI - support for multiple roles	| Create GNMI users with multiple comma separated roles . Ensure the same is reflected in kernel (local linux DB), config_DB (only role and username) and state_DB.	| The multiple user roles should be reflected in all the three DBs.	
+| 17 |	GNMI - support for multiple roles	| Create GNMI users with multiple comma separated roles . Ensure the same is reflected in kernel (local linux DB), config_DB (only role and username) and USER_DB.	| The multiple user roles should be reflected in all the three DBs.	
 | 18 | GNMI - user delete command	| Delete a user using GNMI and verify the same.	| The deleted user should be erased from all the three DBs.	
 | 19 | Deleting a user who has logged in |	Login using a newly created user. Then delete the same user using "userdel <>" command. | Verify that deletion fails and throws an error.	
 | 20 | HAMD process halted and CLI is spawned	| Halt the HAMD process using GDB. Then try to launch sonic-cli. | sonic-cli should not be launched. Instead, it should take a long time and then throw an error message. 
@@ -1063,7 +1110,7 @@ Note : sonic-cli launch time is directly proportional to the num of Xpaths the u
 | 24 | Remote users - Radius/Tacacs authentication	| Login with the correct username and password (same as what is saved in the remote server)	| Remote users should be able to login successfully.	
 | 25 | Creating users with invalid role names |	Create users via any NBI. Give inappropriate role names. | The NBI should be capable of rejecting and throwing error.	
 | 26 |	Creating users with supplementary groups as role names	| Create users via any NBI. Give supplementary groups as role names. | The NBI should be capable of rejecting and throwing error.	
-| 27 |	Save & reload cases	| Write memory and reboot the switch. |	Ensure that local user data is not lost from any of the DB. Remote users which were written in the state_DB should be lost but login should work seamlessly. Post login, remote users should be re-written into state_DB
+| 27 |	Save & reload cases	| Write memory and reboot the switch. |	Ensure that local user data is not lost from any of the DB. Remote users which were written in the USER_DB should be lost but login should work seamlessly. Post login, remote users should be re-written into USER_DB
 | 28 |	Radius users with different MPL values	| Assign multiple MPL values (1 to 15) and ensure appropriate login. |	Admin user should be added to admin, redis, sudo, docker, adm groups and have full admin privileges. Netadmin users should be added to netadmin, docker, redis groups. Secadmin users should be added to secadmin, docker, redis groups. Operator users should be added to docker, operator groups.	
 | 29 |	Radius users with different group/role names | Assign different values to the newly added : SONiC-User-Group VSA (admin/operator/netadmin/secadmin)| Admin user should be added to admin, redis, sudo, docker, adm groups and have full admin priviledges. Netadmin users should be added to netadmin, docker, redis groups. Secadmin users should be added to secadmin, docker, redis groups. Operator users should be added to docker, operator groups.	
 | 30 |	Radius users with invalid user group	| Assign invalid user group to a remote radius user defined in the server |	User should not be able to login. Error should be thrown since the user group is not appropriate.	
@@ -1112,14 +1159,14 @@ Note : sonic-cli launch time is directly proportional to the num of Xpaths the u
 | 16 |	Validate Permitall | 	When the permit alone exists and deny does not exist for an Operation for an userrole. | Like admin usecase, permit  as * and no deny list at all, hence permitall case |
 
 
-# 12 Internal Design Information
+# 13 Internal Design Information
 
 The code changes done as a part of this feature are captured below.
 
-## 12.1  RBAC Code changes
+## 13.1  RBAC Code changes
 The RBAC code is logically split into Klish change and Rest/Gnmi changes. 
 
-### 12.1.1  Klish code changes
+### 13.1.1  Klish code changes
 Klish/CLI involves the following major changes:
 - A new API "mgmt_clish_user_access" is added, which is an access function that verifies the allowed group names configured in the 'access' attribute of the COMMAND tags in XML against the groupname of the user.
 	- It checks the role of the users against the roles present in the group-mapping file and returns permitted/non-permitted.
@@ -1129,7 +1176,10 @@ Klish/CLI involves the following major changes:
 - All the XMLs will be loaded upfront when launching the sonic-cli.
 	- For every access tag present in the COMMAND, the 'mgmt_clish_user_access' API will be called and the commands will be validated for the user logged-in.
 
-### 12.1.2  REST/gNMI code changes
+### 13.1.2  REST/gNMI code changes
+
+- The Translib library uses a tree to enforce RBAC.
+- The transformer component of the translib module reads all annotation yangs and populates the tree.
 
 - REST and GNMI have common code present in sonic-mgmt-common repo. They are copied to the Telemetry and Mgmt-framework dockers. 
 - The code changes for RBAC is added in the common code in sonic-mgmt-common. 
@@ -1139,16 +1189,16 @@ Klish/CLI involves the following major changes:
 - A new function is to be created and called from the "isAuthorizedForSet()" and "isAuthorizedForGet()" to validate whether the particular xpath is authorized or not. 
 - The information required for this validation function is xpath, username/role and the operation type.
 - The details like xpath to role-mapping are required for the validation function. 
-- So, the xpath to role-mapping is created from the annotation yang using sonic-ext:oper-roles attribute. 
+- So, the xpath to role-mapping is created from the annotation yang using sonic-ext:user-role-priv extension statement.
 
-- A new sonic-ext:oper-roles attribute is created. The value for the oper-roles should be added as a string within double quotes. The syntax format of the string is mentioned below. 
-- This sonic-ext:oper-roles can be added to any level in a URI or xpath, ie., this sonic-ext:oper-roles can be added at container level or leaf level.
+- A new sonic-ext:user-role-priv extension statement is created. The value for the user-role-priv should be added as a string within double quotes. The syntax format of the string is mentioned below.
+- This sonic-ext:user-role-priv can be added to any level in a URI or xpath, ie., this sonic-ext:user-role-priv can be added at container level or leaf level.
 
 Syntax: 
 deviation /openconfig-module/openconfig-container[/openconfig-leaf] {
 
 deviate add {
-sonic-ext:oper-roles "Operation1: role1, role2,  !role3; Operation2: role1, Role2";
+sonic-ext:user-role-priv "Operation1: role1, role2,  !role3; Operation2: role1, Role2";
 }
 }
 
@@ -1161,7 +1211,7 @@ Example:
 deviation /open-config/bgp/neighbor {
 
 deviate add {
-sonic-ext:oper-roles "read: admin, netadmin,  secadmin, !operator;  write: admin, netadmin";
+sonic-ext:user-role-priv "read: admin, netadmin,  secadmin, !operator;  write: admin, netadmin; rpc: admin";
 }
 }
 
@@ -1176,20 +1226,20 @@ sonic-ext:oper-roles "read: admin, netadmin,  secadmin, !operator;  write: admin
 - Once the trie node is found, the accesstype is searched from the node with the key as role and opertype. 
 	In this example, consider a REST query with xpath as "/open-config/bgp/neighbor" for RPC operation for role netadmin. The trie search will happen in the trie datastructure with key as xpath.  The trie search will give the node "/neighbor" as result. Then, the role and opertype is used as another key in the node to get the accesstype. If the accesstype is "permit", then the particular query is authorized. Otherwise, the operation is denied with the message "Client is not authorized to perform this operation". 
 
-Note: By default the admin role is having Write access to all xpath and Operator role is having Read permission (except few security) to xpath.
+Note: By default, the admin role has Write access to all xpaths and Operator role has Read permission to all xpaths (except few security xpaths).
 
-## 12.2 HAMD code changes
+## 13.2 HAMD code changes
 The following major changes have been done in the HAMD module.
 
 1. Removed the "ham" code from the mgmt-framework repo and added as a separate repo under sonic-buildimage.
 2. Made changes to the rules file of the affected repos, Makefile/debian of mgmt-framework repo, sonic_debian_extension file, slave.mk, etc to incorporate the peeling of HAM module.
 3. Added support for multiple roles - hamd_accounts.cpp has been modified to support these "CSV's"
-4. The local users will be written into the state_DB. They will be re-written after a save & reload of the switch too. Added hamd_db.cpp & hamd_redis.cpp files for this purpose. 
-5. HAMD will listen to the config_DB notification during startup and write the local users into the state_DB, when the user details get flushed from state_DB after a save & reload scenario.
+4. The local users will be written into the USER_DB. They will be re-written after a save & reload of the switch too. Added hamd_db.cpp & hamd_redis.cpp files for this purpose. 
+5. HAMD will listen to the config_DB notification during startup and write the local users into the USER_DB, when the user details get flushed from USER_DB after a save & reload scenario.
 6. Two more additional roles have been added to the group-mapping file : secadmin & netadmin (along with their supplementary roles)
 7. SAC module of the HAM does not have any significance currently. Hence the SAC module is neither compiled nor packaged as a separate debian.
 
-## 12.3 Radius code changes
+## 13.3 Radius code changes
 In the radius repo, the following have been modified: 
 
 1. libpam-radius :
@@ -1202,38 +1252,38 @@ In the radius repo, the following have been modified:
 	- In this section, the group name is read from the environment variable and the corresponding MPL is set, in order to enforce the group name sent from the Radius server.
 	- Added support for the two new roles : secadmin and netadmin
 	- Corrected the supplementary groups of the existing roles : admin and operator.
-	- The remote users will be written into the state_DB from the Radius module itself.
-	- Code for writing into the state_DB has been added => db.cpp
+	- The remote users will be written into the USER_DB from the Radius module itself.
+	- Code for writing into the USER_DB has been added => db.cpp
 	- Changes in the Makefile and related files to compile C and C++ code together have been added.
 	- Code changes for restoring the DB entry (when the user logs in) after a save & reload is also added.
-	- swsscommon has been added as dependent module for the Radius code compilation (for writing remote users into state_DB).
+	- swsscommon has been added as dependent module for the Radius code compilation (for writing remote users into USER_DB).
 	- Rules file of the radius repo has been modified for the same purpose.
 
-## 12.4 Tacacs code changes
+## 13.4 Tacacs code changes
 In the tacacs repo, the following have been modified:
 
 1. nss_tacplus.cpp :
 	- Added support for the two new roles : secadmin and netadmin
 	- Corrected the supplementary groups of the existing groups : admin and operator.
-	- The remote users will be written into the state_DB from the Tacacs module itself.
-	- Code for writing into the state_DB has been added => db.cpp
+	- The remote users will be written into the USER_DB from the Tacacs module itself.
+	- Code for writing into the USER_DB has been added => db.cpp
 	- Changes in the Makefile and related files to compile C and C++ code together have been added.
 	- Code changes for restoring the DB entry (when the user logs in) after a save & reload is also added.
-	- swsscommon has been added as dependent module for the Tacacs code compilation (for writing remote users into state_DB).
+	- swsscommon has been added as dependent module for the Tacacs code compilation (for writing remote users into USER_DB).
 	- Rules file of the tacacs repo has been modified for the same purpose.
 	- Patch has been created with the above mentioned changes.
 
-## 12.5 IS-CLI Compliance
+## 13.5 IS-CLI Compliance
 NA
 
-## 12.6 SONiC Packaging
+## 13.6 SONiC Packaging
 NA
 
-## 12.7 Broadcom Silicon Considerations
+## 13.7 Broadcom Silicon Considerations
 NA
 
-## 12.8 Design Alternatives
+## 13.8 Design Alternatives
 NA
 
-## 12.9 Release Matrix
+## 13.9 Release Matrix
 Dell release - 4.1
