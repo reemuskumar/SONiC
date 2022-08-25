@@ -1006,6 +1006,7 @@ Refer to section 3.
 All the commands in XML files under src/sonic-mgmt-framework/CLI/clitree/cli-xml must be updated with the access tag.
 The access field of each XML COMMAND tag must be updated with the appropriate RBAC information.
 For example,
+
                <COMMAND name="configure terminal" access="admin:netadmin"
                         help="Configure from the terminal"
                         view="configure-view">
